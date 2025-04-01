@@ -128,15 +128,16 @@ def main():
 
 from src.pipeline import ScraperPipeline
 def main1():
-
     config = {
-        "Brand": "BIBS",
         "Category": "Pacifier",
         # 没有 Search_term，默认会使用 BIBS Pacifier
     }
+    meds_pipeline = ScraperPipeline(retailer_url="meds.se", config=config)
+    meds_pipeline.run_pipeline()
 
-    pipeline = ScraperPipeline(retailer_url="amazon.de", config=config)
-    pipeline.run_pipeline()
+    # amazon.de 的爬虫配置
+    # pipeline = ScraperPipeline(retailer_url="amazon.de", config=config)
+    # pipeline.run_pipeline()
 
 
 

@@ -6,18 +6,25 @@ from bs4 import BeautifulSoup
 from scrapy.crawler import CrawlerProcess
 from scrapy.utils.project import get_project_settings
 from src.scrapers.amazon_search_spider import AmazonSearchSpider
-
-
 from src.extractors.amazon_extractor import AmazonExtractor
+
+from src.scrapers.meds_spider import MedsSearchSpider
+from src.extractors.meds_extractor import MedsExtractor
+
 from src.processors.post_processor import PostProcessor
 from src.utils import get_unique_filename, copy_and_rename_json, delete_file, get_market_country_based_on_url
 
+allowed_retailer_urls = ["amazon.de", "meds.se"]
+
 class ScraperPipeline:
     def __init__(self, retailer_url, config):
-        assert retailer_url in ['amazon.de'], "Only 'Amazon' is currently supported."
+        assert retailer_url in allowed_retailer_urls, f"not supported retailer_url: {retailer_url}, allowed: {allowed_retailer_urls}"
+        
         # 一经确认不能修改的参数，主要是爬虫的基本信息
         self.retailer_url = retailer_url
         self.market_country = get_market_country_based_on_url(retailer_url)
+        self.search_spider, self.extractor = self.get_spider_and_extractor(retailer_url)
+        
         
         # 自动更新的信息，日期和输出文件名，不会因为每次的检索需求变数而变化
         self.date = datetime.datetime.now().strftime("%m-%d")
@@ -31,10 +38,26 @@ class ScraperPipeline:
         self.search_term = config.get("Search_term", f"{self.brand} {self.category}".strip())
 
 
-    def run_scraper(self):
+    def run_scraper(self, debug=False):
         """Run Scrapy spider to collect raw HTML content from Amazon."""
         temp_scraped_data_file = "./scraped_data.json"
         output_file = get_unique_filename("./temp/scraped_data.json")
+        
+        if debug:
+            with open(temp_scraped_data_file, "r", encoding="utf-8") as f:
+                scraped_data = json.load(f)
+            # 基础分析 HTML 中商品存在情况
+            cards = []
+            for i, page in enumerate(scraped_data[:2]):
+                html = page["html"]
+                soup = BeautifulSoup(html, "html.parser")
+                products = soup.select('div[data-component-type="s-search-result"]')
+                if products:
+                    print(f"✅ 第 {i + 1} 页包含 {len(products)} 个商品")
+                    cards.extend(products)
+                else:
+                    print(f"❌ 第 {i + 1} 页未找到任何商品，可能被反爬")
+            return scraped_data
         
         print("🚀 启动 Scrapy 爬虫...")
         
@@ -43,7 +66,7 @@ class ScraperPipeline:
 
         process = CrawlerProcess(get_project_settings())
         process.crawl(
-            AmazonSearchSpider,
+            self.search_spider,
             base_url=self.retailer_url,
             search_term=self.search_term,
             max_pages=self.max_pages
@@ -61,25 +84,12 @@ class ScraperPipeline:
         with open(output_file, "r", encoding="utf-8") as f:
             scraped_data = json.load(f)
 
-        # 基础分析 HTML 中商品存在情况
-        cards = []
-        for i, page in enumerate(scraped_data[:2]):
-            html = page["html"]
-            soup = BeautifulSoup(html, "html.parser")
-            products = soup.select('div[data-component-type="s-search-result"]')
-            if products:
-                print(f"✅ 第 {i + 1} 页包含 {len(products)} 个商品")
-                cards.extend(products)
-            else:
-                print(f"❌ 第 {i + 1} 页未找到任何商品，可能被反爬")
-
         return scraped_data
 
     def extract_data(self, scraped_pages):
-        extractor = AmazonExtractor()
         all_products = []
         for page in scraped_pages:
-            products = extractor.parse_products(page['html'], self.retailer_url)
+            products = self.extractor.parse_products(page['html'])
             all_products.extend(products)
         return pd.DataFrame(all_products)
 
@@ -110,5 +120,13 @@ class ScraperPipeline:
 
         df_clean = self.post_process(df)
         print(f"🧹 去重后商品数: {len(df_clean)}")
-
+        
         self.save_to_excel(df_clean)
+
+    def get_spider_and_extractor(self, retailer_url):
+        if retailer_url == "amazon.de":
+            return AmazonSearchSpider, AmazonExtractor
+        elif retailer_url == "meds.se":
+            return MedsSearchSpider, MedsExtractor()
+        else:
+            raise ValueError(f"Unsupported retailer URL: {retailer_url}")
