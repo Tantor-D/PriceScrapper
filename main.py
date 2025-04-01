@@ -50,21 +50,20 @@ def run_scraper(search_term, base_url, max_pages):
     temp_scraped_data_file = "./scraped_data.json"
     output_file = get_unique_filename("./temp/scraped_data.json")
     output_file = "./scraped_data.json"
-    # # Run the Scrapy Spider
-    # process = CrawlerProcess(get_project_settings())
-    # process.crawl(AmazonSearchSpider, base_url=base_url, search_term=search_term, max_pages=max_pages)
-    # process.start()
+    # Run the Scrapy Spider
+    process = CrawlerProcess(get_project_settings())
+    process.crawl(AmazonSearchSpider, base_url=base_url, search_term=search_term, max_pages=max_pages)
+    process.start()
     
-    # # Check if file was generated
-    # if not os.path.exists(temp_scraped_data_file):
-    #     print("Scraping failed or no results found.")
-    #     return []
-    # else:
-    #     # Move the temp file to the final output file
-    #     copy_and_rename_json(temp_scraped_data_file, output_file)
+    # Check if file was generated
+    if not os.path.exists(temp_scraped_data_file):
+        print("Scraping failed or no results found.")
+        return []
+    else:
+        # Move the temp file to the final output file
+        copy_and_rename_json(temp_scraped_data_file, output_file)
     
     # Read scraped JSON output
-    
     with open(output_file, "r", encoding="utf-8") as f:
         scraped_data = json.load(f)
 
@@ -125,9 +124,33 @@ def main():
     df_unique.to_excel(output_excel, index=False)
     print(f"Scraped data saved to {output_excel}")
 
+
+
+from src.pipeline import ScraperPipeline
+def main1():
+    config = {
+        "Search_term": "baby bottles",
+        "Market": "amazon.de",
+        "Brand": "Avent",
+        "Max_pages": 2
+    }
+    config = {
+        "Brand": "BIBS",
+        "Category": "Pacifier",
+        "Market": "amazon.de",
+        # 没有 Search_term，默认会使用 BIBS Pacifier
+    }
+
+    pipeline = ScraperPipeline(site="Amazon", config=config)
+    pipeline.run_pipeline()
+
+
+
 if __name__ == "__main__":
-    main()
+    # main()
     
-    with open("./scraped_data.json", "r", encoding='utf-8') as f:
-        aa = json.load(f)
-        print(aa)
+    main1()
+    
+    # with open("./scraped_data.json", "r", encoding='utf-8') as f:
+    #     aa = json.load(f)
+    #     print(aa)
