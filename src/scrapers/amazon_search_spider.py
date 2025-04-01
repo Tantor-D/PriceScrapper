@@ -13,6 +13,8 @@ class AmazonSearchSpider(scrapy.Spider):
             "scraped_data.json": {
                 "format": "json",
                 "encoding": "utf-8",
+                # "indent": 4,  # 可选：增加缩进可读性
+                # "overwrite": True,  # 防止文件追加造成格式错误
             },
         },
     }

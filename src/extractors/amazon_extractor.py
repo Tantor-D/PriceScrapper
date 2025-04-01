@@ -6,10 +6,10 @@ from typing import List, Dict, Optional
 
 
 class AmazonExtractor:
-    def parse_products(self, html_content: str, base_url: str = "https://www.amazon.com") -> List[
-        Dict[str, Optional[str]]]:
+    def parse_products(self, html_content: str, 
+                       base_url: str = "https://www.amazon.com") -> List[Dict[str, Optional[str]]]:
         """解析 Amazon 搜索结果页面的 HTML，提取产品信息"""
-        sel = Selector(html_content)
+        sel = Selector(text=html_content)
         products = []
         base_http_url = base_url if base_url.startswith("http") else "https://" + base_url
 

@@ -1,5 +1,9 @@
-.idea
+scraped_data.json
+amazon_products*
 
+.idea
+**/__pycache__/
+/temp/
 
 # macOS system files
 .DS_Store
