@@ -10,12 +10,14 @@ from src.scrapers.amazon_search_spider import AmazonSearchSpider
 
 from src.extractors.amazon_extractor import AmazonExtractor
 from src.processors.post_processor import PostProcessor
-from src.utils import get_unique_filename, copy_and_rename_json, delete_file
+from src.utils import get_unique_filename, copy_and_rename_json, delete_file, get_market_country_based_on_url
 
 class ScraperPipeline:
-    def __init__(self, site, config):
-        assert site in ['Amazon'], "Only 'Amazon' is currently supported."
-
+    def __init__(self, retailer_url, config):
+        assert retailer_url in ['amazon.de'], "Only 'Amazon' is currently supported."
+        # 一经确认不能修改的参数，主要是爬虫的基本信息
+        self.retailer_url = retailer_url
+        self.market_country = get_market_country_based_on_url(retailer_url)
         
         # 自动更新的信息，日期和输出文件名，不会因为每次的检索需求变数而变化
         self.date = datetime.datetime.now().strftime("%m-%d")
@@ -24,7 +26,6 @@ class ScraperPipeline:
         # 需要外界输入的参数，用于决定每次的爬虫行为
         self.brand = config.get("Brand", "")
         self.category = config.get("Category", "")
-        self.retailer_url = config.get("Retailer_url", "amazon.de")
         self.max_pages = config.get("Max_pages", 2)
         self.output_excel = get_unique_filename(f"./results/{self.retailer_url.replace(".", "-").lower()}_{self.date}_Brand-{self.brand}_Category-{self.category}.xlsx")        
         self.search_term = config.get("Search_term", f"{self.brand} {self.category}".strip())
@@ -88,10 +89,11 @@ class ScraperPipeline:
     def save_to_excel(self, df):
         # 添加元信息列
         df["Date"] = self.date
-        df["Market"] = self.retailer_url
+        df["Market"] = self.market_country
+        df["Retail"] = self.retailer_url        
         df["Brand"] = self.brand
         df["Category"] = self.category
-        df["Search_Term"] = self.search_term
+        df["Search Keywords"] = self.search_term
 
         df.to_excel(self.output_excel, index=False)
         print(f"📁 数据已保存到: {self.output_excel}")

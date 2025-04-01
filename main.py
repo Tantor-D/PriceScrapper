@@ -132,11 +132,10 @@ def main1():
     config = {
         "Brand": "BIBS",
         "Category": "Pacifier",
-        "Retailer_url": "amazon.de",
         # 没有 Search_term，默认会使用 BIBS Pacifier
     }
 
-    pipeline = ScraperPipeline(site="Amazon", config=config)
+    pipeline = ScraperPipeline(retailer_url="amazon.de", config=config)
     pipeline.run_pipeline()
 
 

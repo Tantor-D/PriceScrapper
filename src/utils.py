@@ -37,3 +37,25 @@ def delete_file(file_path):
         print(f"✅ 删除文件: {file_path}")
     else:
         print(f"❌ 文件不存在: {file_path}")
+
+def get_market_country_based_on_url(url:str):
+    config_dict = {
+        "amazon.de": "Germany",
+        "amazon.com": "United States",
+        "meds.se": "Sweden",
+        "apotea.se": "Sweden",
+    }
+    
+    # if url.lower() in config_dict:
+    if url.lower() in config_dict:
+        return config_dict[url]
+    
+    # judge by domain name if not in config_dict
+    # de = Germany, com = United States, se = Sweden
+    # extract the domain name from the url
+    domain_name = url.split(".")[-1]
+    if domain_name in ["de", "com", "se"]:
+        return config_dict[f"{domain_name.upper()}.{url.split('.')[-1]}"]
+    return "Unknown" 
+        
+        
