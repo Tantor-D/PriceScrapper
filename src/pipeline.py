@@ -16,20 +16,19 @@ class ScraperPipeline:
     def __init__(self, site, config):
         assert site in ['Amazon'], "Only 'Amazon' is currently supported."
 
-        self.site = site
+        
+        # 自动更新的信息，日期和输出文件名，不会因为每次的检索需求变数而变化
+        self.date = datetime.datetime.now().strftime("%m-%d")
+        
+        
+        # 需要外界输入的参数，用于决定每次的爬虫行为
         self.brand = config.get("Brand", "")
         self.category = config.get("Category", "")
-        self.market_country = config.get("Market", "amazon.de")
+        self.retailer_url = config.get("Retailer_url", "amazon.de")
         self.max_pages = config.get("Max_pages", 2)
+        self.output_excel = get_unique_filename(f"./results/{self.retailer_url.replace(".", "-").lower()}_{self.date}_Brand-{self.brand}_Category-{self.category}.xlsx")        
+        self.search_term = config.get("Search_term", f"{self.brand} {self.category}".strip())
 
-        # search_term 自动拼接逻辑
-        self.search_term = config.get("Search_term")
-        if not self.search_term:
-            self.search_term = f"{self.brand} {self.category}".strip()
-
-        self.date = datetime.datetime.now().strftime("%m-%d")
-        self.scraped_file = "./scraped_data.json"
-        self.output_excel = get_unique_filename(f"./results/{self.site.lower()}_products_{self.date}.xlsx")
 
     def run_scraper(self):
         """Run Scrapy spider to collect raw HTML content from Amazon."""
@@ -44,7 +43,7 @@ class ScraperPipeline:
         process = CrawlerProcess(get_project_settings())
         process.crawl(
             AmazonSearchSpider,
-            base_url=self.market_country,
+            base_url=self.retailer_url,
             search_term=self.search_term,
             max_pages=self.max_pages
         )
@@ -79,7 +78,7 @@ class ScraperPipeline:
         extractor = AmazonExtractor()
         all_products = []
         for page in scraped_pages:
-            products = extractor.parse_products(page['html'], self.market_country)
+            products = extractor.parse_products(page['html'], self.retailer_url)
             all_products.extend(products)
         return pd.DataFrame(all_products)
 
@@ -89,7 +88,7 @@ class ScraperPipeline:
     def save_to_excel(self, df):
         # 添加元信息列
         df["Date"] = self.date
-        df["Market"] = self.market_country
+        df["Market"] = self.retailer_url
         df["Brand"] = self.brand
         df["Category"] = self.category
         df["Search_Term"] = self.search_term
@@ -98,7 +97,7 @@ class ScraperPipeline:
         print(f"📁 数据已保存到: {self.output_excel}")
 
     def run_pipeline(self):
-        print(f"🔍 正在抓取 '{self.search_term}' 商品数据（市场: {self.market_country}）...")
+        print(f"🔍 正在抓取 '{self.search_term}' 商品数据（市场: {self.retailer_url}）...")
         scraped_pages = self.run_scraper()
         if not scraped_pages:
             print("⚠️ 无有效抓取结果，流程终止。")

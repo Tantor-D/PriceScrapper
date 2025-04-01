@@ -128,16 +128,11 @@ def main():
 
 from src.pipeline import ScraperPipeline
 def main1():
-    config = {
-        "Search_term": "baby bottles",
-        "Market": "amazon.de",
-        "Brand": "Avent",
-        "Max_pages": 2
-    }
+
     config = {
         "Brand": "BIBS",
         "Category": "Pacifier",
-        "Market": "amazon.de",
+        "Retailer_url": "amazon.de",
         # 没有 Search_term，默认会使用 BIBS Pacifier
     }
 
