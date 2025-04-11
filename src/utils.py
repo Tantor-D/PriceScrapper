@@ -34,9 +34,7 @@ def delete_file(file_path):
     """删除文件，如果文件存在的话."""
     if os.path.exists(file_path):
         os.remove(file_path)
-        print(f"✅ 删除文件: {file_path}")
-    else:
-        print(f"❌ 文件不存在: {file_path}")
+
 
 def get_market_country_based_on_url(url:str):
     config_dict = {

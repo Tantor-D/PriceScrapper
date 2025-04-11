@@ -11,10 +11,13 @@ from src.extractors.amazon_extractor import AmazonExtractor
 from src.scrapers.meds_spider import MedsSearchSpider
 from src.extractors.meds_extractor import MedsExtractor
 
+from src.scrapers.apotea_search_spider import ApoteaSearchSpider
+from src.extractors.apotea_extractor import ApoteaExtractor
+
 from src.processors.post_processor import PostProcessor
 from src.utils import get_unique_filename, copy_and_rename_json, delete_file, get_market_country_based_on_url
 
-allowed_retailer_urls = ["amazon.de", "meds.se"]
+allowed_retailer_urls = ["amazon.de", "meds.se", "apotea.se"]
 
 class ScraperPipeline:
     def __init__(self, retailer_url, config):
@@ -27,14 +30,14 @@ class ScraperPipeline:
         
         
         # 自动更新的信息，日期和输出文件名，不会因为每次的检索需求变数而变化
-        self.date = datetime.datetime.now().strftime("%m-%d")
+        self.date = datetime.datetime.now().strftime("%d/%m/%Y")
         
         
         # 需要外界输入的参数，用于决定每次的爬虫行为
         self.brand = config.get("Brand", "")
         self.category = config.get("Category", "")
         self.max_pages = config.get("Max_pages", 2)
-        self.output_excel = get_unique_filename(f"./results/{self.retailer_url.replace(".", "-").lower()}_{self.date}_Brand-{self.brand}_Category-{self.category}.xlsx")        
+        self.output_excel = get_unique_filename(f"./results/{self.retailer_url.replace(".", "-").lower()}_{self.date.replace("/", "-")}_Brand-{self.brand}_Category-{self.category}.xlsx")        
         self.search_term = config.get("Search_term", f"{self.brand} {self.category}".strip())
 
 
@@ -43,6 +46,7 @@ class ScraperPipeline:
         temp_scraped_data_file = "./scraped_data.json"
         output_file = get_unique_filename("./temp/scraped_data.json")
         
+        # ^ 仅仅用于debug,那时候不需要进行爬虫操作，只需要读取之前的爬虫结果
         if debug:
             with open(temp_scraped_data_file, "r", encoding="utf-8") as f:
                 scraped_data = json.load(f)
@@ -64,6 +68,7 @@ class ScraperPipeline:
         # 删除旧的临时文件以避免冲突，爬虫系统会自动创建新的文件，如果原先文件就存在的话会对内容进行追加而不是覆盖导致出错
         delete_file(temp_scraped_data_file)
 
+        # 进行爬虫操作
         process = CrawlerProcess(get_project_settings())
         process.crawl(
             self.search_spider,
@@ -73,6 +78,7 @@ class ScraperPipeline:
         )
         process.start()
 
+        # 通过检查文件是否存在来判断爬虫是否成功
         if not os.path.exists(temp_scraped_data_file):
             print("❌ Scraping 失败或未找到结果。")
             return []
@@ -83,13 +89,12 @@ class ScraperPipeline:
         # 加载 JSON 数据，完成爬虫检索
         with open(output_file, "r", encoding="utf-8") as f:
             scraped_data = json.load(f)
-
         return scraped_data
 
     def extract_data(self, scraped_pages):
         all_products = []
         for page in scraped_pages:
-            products = self.extractor.parse_products(page['html'])
+            products = self.extractor.parse_products(page['html'], base_url=self.retailer_url if self.retailer_url.startswith("http") else "https://www." + self.retailer_url)
             all_products.extend(products)
         return pd.DataFrame(all_products)
 
@@ -125,8 +130,10 @@ class ScraperPipeline:
 
     def get_spider_and_extractor(self, retailer_url):
         if retailer_url == "amazon.de":
-            return AmazonSearchSpider, AmazonExtractor
+            return AmazonSearchSpider, AmazonExtractor()
         elif retailer_url == "meds.se":
             return MedsSearchSpider, MedsExtractor()
+        elif retailer_url == "apotea.se":
+            return ApoteaSearchSpider, ApoteaExtractor()
         else:
             raise ValueError(f"Unsupported retailer URL: {retailer_url}")
