@@ -12,14 +12,14 @@ from scrapy.utils.project import get_project_settings
 import shutil
 
 def get_unique_filename(file_path):
-    # 创建文件所在的目录（如果不存在）
+    # Create the directory if it does not exist
     directory = os.path.dirname(file_path)
     if directory and not os.path.exists(directory):
         os.makedirs(directory)
     
-    # 尝试找到一个不存在的文件名，防止覆盖原文件
+    # Try to find a non-existing filename to avoid overwriting the original file
     if not os.path.exists(file_path):
-        return file_path  # 文件不存在，直接返回原路径
+        return file_path  # File does not exist, return original path
 
     base, ext = os.path.splitext(file_path)
     counter = 1
@@ -34,14 +34,14 @@ def get_unique_filename(file_path):
 
 def copy_and_rename_json(src_path, dest_path):
     if not os.path.exists(src_path):
-        raise FileNotFoundError(f"源文件不存在: {src_path}")
+        raise FileNotFoundError(f"Source file does not exist: {src_path}")
 
-    # 确保目标路径唯一
+    # Ensure destination path is unique
     unique_dest = get_unique_filename(dest_path)
 
-    # 复制文件到目标路径
+    # Copy file to destination path
     shutil.copy2(src_path, unique_dest)
-    print(f"文件已复制并重命名为: {unique_dest}")
+    print(f"File has been copied and renamed to: {unique_dest}")
 
 
 def run_scraper(search_term, base_url, max_pages):
@@ -67,22 +67,21 @@ def run_scraper(search_term, base_url, max_pages):
     with open(output_file, "r", encoding="utf-8") as f:
         scraped_data = json.load(f)
 
-
-    # do a basic data analyse
+    # Do a basic data analysis
     data = scraped_data
     cards = []
-    for i, page in enumerate(data[:2]):  # 只检查前几页，避免数据太多
+    for i, page in enumerate(data[:2]):  # Only check the first few pages to avoid too much data
         html_content = page["html"]
         soup = BeautifulSoup(html_content, "html.parser")
 
-        # 查找是否包含商品列表
+        # Check if it contains product listings
         product_cards = soup.select('div[data-component-type="s-search-result"]')
 
         if product_cards:
-            print(f"✅ 第 {i + 1} 页包含 {len(product_cards)} 个商品")
-            cards.extend(product_cards)  # 直接添加到cards列表中，方便后续处理
+            print(f"✅ Page {i + 1} contains {len(product_cards)} products")
+            cards.extend(product_cards)  # Add directly to cards list for later processing
         else:
-            print(f"❌ 第 {i + 1} 页未找到任何商品，可能被 Amazon 反爬")
+            print(f"❌ Page {i + 1} found no products, possibly blocked by Amazon anti-scraping measures")
         
     return scraped_data
 
@@ -90,7 +89,7 @@ def main():
     # Set parameters
     search_term = "baby bottles"   # Change to your desired search query
     base_url = "amazon.de"  # Use amazon.de for Germany
-    max_pages = 2            # Adjust as needed
+    max_pages = 2           # Adjust as needed
 
     # Step 1: Scrape Amazon search pages
     print(f"Scraping Amazon ({base_url}) for '{search_term}' up to {max_pages} pages...")
@@ -124,34 +123,24 @@ def main():
     df_unique.to_excel(output_excel, index=False)
     print(f"Scraped data saved to {output_excel}")
 
-
-
 from src.pipeline import ScraperPipeline
 def main1():
     config = {
         "Category": "Pacifier Box",
         "Brand": "BIBS",
         # "Search_term": "BIBS Pacifier Box",
-        # 没有 Search_term，默认会使用 BIBS Pacifier
+        # Without Search_term, it will default to BIBS Pacifier
     }
-    meds_pipeline = ScraperPipeline(retailer_url="meds.se", config=config)
-    meds_pipeline.run_pipeline()
-
-    # 这个现在是不支持的
-    # apotea_pipeline = ScraperPipeline(retailer_url="apotea.se", config=config)
-    # apotea_pipeline.run_pipeline()
     
-    # amazon.de 的爬虫配置
-    # pipeline = ScraperPipeline(retailer_url="amazon.de", config=config)
-    # pipeline.run_pipeline()
+    # meds.se spider call
+    # meds_pipeline = ScraperPipeline(retailer_url="meds.se", config=config)
+    # meds_pipeline.run_pipeline()
 
-
+    # amazon.de spider call
+    amazon_pipeline = ScraperPipeline(retailer_url="amazon.de", config=config)
+    amazon_pipeline.run_pipeline()
 
 if __name__ == "__main__":
     # main()
-    
     main1()
     
-    # with open("./scraped_data.json", "r", encoding='utf-8') as f:
-    #     aa = json.load(f)
-    #     print(aa)
