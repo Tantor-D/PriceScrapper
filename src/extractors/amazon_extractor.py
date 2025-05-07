@@ -1,5 +1,3 @@
-
-
 from parsel import Selector
 from urllib.parse import urljoin
 from typing import List, Dict, Optional
@@ -8,7 +6,7 @@ from typing import List, Dict, Optional
 class AmazonExtractor:
     def parse_products(self, html_content: str, 
                        base_url: str = "https://www.amazon.com") -> List[Dict[str, Optional[str]]]:
-        """解析 Amazon 搜索结果页面的 HTML，提取产品信息"""
+        """Parse Amazon search result page HTML and extract product information"""
         sel = Selector(text=html_content)
         products = []
         base_http_url = base_url if base_url.startswith("http") else "https://" + base_url
@@ -20,11 +18,11 @@ class AmazonExtractor:
 
         import json
         with open('../../products.json', 'w') as f:
-            json.dump(products, f, indent=4)  # 保存到json文件中
+            json.dump(products, f, indent=4)  # Save to JSON file
         return products
 
     def extract_product_info(self, card, base_http_url: str) -> Optional[Dict[str, Optional[str]]]:
-        """从单个产品卡片提取信息"""
+        """Extract information from a single product card"""
         title = self.extract_title(card)
         if not title:
             return None
@@ -46,13 +44,13 @@ class AmazonExtractor:
         }
 
     def extract_title(self, card) -> Optional[str]:
-        """提取产品标题"""
+        """Extract product title"""
         title = card.css('h2 a span::text').get() or card.css('h2 a::attr(aria-label)').get() or card.css(
             'img::attr(alt)').get()
         return title.strip() if title else None
 
     def extract_price_and_currency(self, card) -> (Optional[str], Optional[str]):
-        """提取价格和货币种类"""
+        """Extract price and currency"""
         price_whole = card.css('span.a-price-whole::text').get()
         price_fraction = card.css('span.a-price-fraction::text').get()
         currency_symbol = card.css('span.a-price-symbol::text').get() or card.css('span.a-offscreen::text').re_first(
@@ -70,21 +68,21 @@ class AmazonExtractor:
         return price, currency
 
     def extract_rating(self, card) -> Optional[str]:
-        """提取评分"""
+        """Extract rating"""
         rating = card.css('span.a-icon-alt::text').get()
         return rating.split()[0] if rating else None
 
     def extract_reviews_count(self, card) -> Optional[str]:
-        """提取评论数量"""
+        """Extract number of reviews"""
         reviews_count = card.css('span.a-size-base.s-underline-text::text').get()
         return reviews_count.strip().replace(",", "") if reviews_count else None
 
     def extract_link(self, card, base_http_url: str) -> Optional[str]:
-        """提取产品链接"""
+        """Extract product link"""
         rel_link = card.css('a::attr(href)').get()
         return urljoin(base_http_url, rel_link) if rel_link else None
 
     def extract_pack_size(self, card) -> Optional[str]:
-        """提取包装规格"""
+        """Extract pack size"""
         pack_size = card.css('div.a-row.a-size-base span.a-size-base::text').get()
         return pack_size.strip() if pack_size else None
