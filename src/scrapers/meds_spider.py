@@ -39,5 +39,3 @@ class MedsSearchSpider(scrapy.Spider):
             "url": response.url,
             "html": response.text,
         }
-
-        # 可以在这里加提取逻辑，例如解析商品信息、价格、链接等

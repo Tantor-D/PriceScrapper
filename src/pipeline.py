@@ -11,9 +11,6 @@ from src.extractors.amazon_extractor import AmazonExtractor
 from src.scrapers.meds_spider import MedsSearchSpider
 from src.extractors.meds_extractor import MedsExtractor
 
-from src.scrapers.apotea_search_spider import ApoteaSearchSpider
-from src.extractors.apotea_extractor import ApoteaExtractor
-
 from src.processors.post_processor import PostProcessor
 from src.utils import get_unique_filename, copy_and_rename_json, delete_file, get_market_country_based_on_url
 
@@ -131,7 +128,5 @@ class ScraperPipeline:
             return AmazonSearchSpider, AmazonExtractor()
         elif retailer_url == "meds.se":
             return MedsSearchSpider, MedsExtractor()
-        elif retailer_url == "apotea.se":
-            return ApoteaSearchSpider, ApoteaExtractor()
         else:
             raise ValueError(f"Unsupported retailer URL: {retailer_url}")

@@ -2,6 +2,7 @@ import pandas as pd
 from src.scrapers.amazon_search_spider import AmazonSearchSpider
 from src.processors.post_processor import PostProcessor
 from src.extractors.amazon_extractor import AmazonExtractor
+from src.pipeline import ScraperPipeline
 
 from bs4 import BeautifulSoup
 import json
@@ -85,46 +86,46 @@ def run_scraper(search_term, base_url, max_pages):
         
     return scraped_data
 
+# old main function, now all the code is in the main function, the logic is the same and wrapped in the pipeline class
+# def main1():
+#     # Set parameters
+#     search_term = "baby bottles"   # Change to your desired search query
+#     base_url = "amazon.de"  # Use amazon.de for Germany
+#     max_pages = 2           # Adjust as needed
+
+#     # Step 1: Scrape Amazon search pages
+#     print(f"Scraping Amazon ({base_url}) for '{search_term}' up to {max_pages} pages...")
+#     scraped_pages = run_scraper(search_term, base_url, max_pages)
+#     if not scraped_pages:
+#         print("No data scraped. Exiting.")
+#         return
+
+#     # Step 2: Extract product data
+#     extractor = AmazonExtractor()
+#     all_products = []
+#     for page in scraped_pages:
+#         products = extractor.parse_products(page['html'], base_url)
+#         all_products.extend(products)
+
+#     # Convert extracted data to DataFrame
+#     df = pd.DataFrame(all_products)
+#     print(f"Total extracted products: {len(df)}")
+
+#     # Step 3: Post-process data (remove duplicates)
+#     processor = PostProcessor()
+#     df_unique = processor.remove_duplicates(df)
+
+#     print(f"Products after deduplication: {len(df_unique)}")
+
+#     # Step 4: Save the cleaned data
+#     # output_csv = "amazon_products.csv"
+#     # df_unique.to_csv(output_csv, index=False)
+#     # print(f"Scraped data saved to {output_csv}")
+#     output_excel = "amazon_products.xlsx"
+#     df_unique.to_excel(output_excel, index=False)
+#     print(f"Scraped data saved to {output_excel}")
+
 def main():
-    # Set parameters
-    search_term = "baby bottles"   # Change to your desired search query
-    base_url = "amazon.de"  # Use amazon.de for Germany
-    max_pages = 2           # Adjust as needed
-
-    # Step 1: Scrape Amazon search pages
-    print(f"Scraping Amazon ({base_url}) for '{search_term}' up to {max_pages} pages...")
-    scraped_pages = run_scraper(search_term, base_url, max_pages)
-    if not scraped_pages:
-        print("No data scraped. Exiting.")
-        return
-
-    # Step 2: Extract product data
-    extractor = AmazonExtractor()
-    all_products = []
-    for page in scraped_pages:
-        products = extractor.parse_products(page['html'], base_url)
-        all_products.extend(products)
-
-    # Convert extracted data to DataFrame
-    df = pd.DataFrame(all_products)
-    print(f"Total extracted products: {len(df)}")
-
-    # Step 3: Post-process data (remove duplicates)
-    processor = PostProcessor()
-    df_unique = processor.remove_duplicates(df)
-
-    print(f"Products after deduplication: {len(df_unique)}")
-
-    # Step 4: Save the cleaned data
-    # output_csv = "amazon_products.csv"
-    # df_unique.to_csv(output_csv, index=False)
-    # print(f"Scraped data saved to {output_csv}")
-    output_excel = "amazon_products.xlsx"
-    df_unique.to_excel(output_excel, index=False)
-    print(f"Scraped data saved to {output_excel}")
-
-from src.pipeline import ScraperPipeline
-def main1():
     config = {
         "Category": "Pacifier Box",
         "Brand": "BIBS",
@@ -141,6 +142,5 @@ def main1():
     amazon_pipeline.run_pipeline()
 
 if __name__ == "__main__":
-    # main()
-    main1()
+    main()
     
